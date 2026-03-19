@@ -1,0 +1,32 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Release
+        run: |
+          cd claude-usage-systray
+          xcodebuild \
+            -project ClaudeUsageSystray.xcodeproj \
+            -scheme ClaudeUsageSystray \
+            -configuration Release \
+            -derivedDataPath build \
+            build
+
+      - name: Package as zip
+        run: |
+          cd claude-usage-systray/build/Build/Products/Release
+          zip -r ClaudeUsageSystray.zip ClaudeUsageSystray.app
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: claude-usage-systray/build/Build/Products/Release/ClaudeUsageSystray.zip
+          generate_release_notes: true
