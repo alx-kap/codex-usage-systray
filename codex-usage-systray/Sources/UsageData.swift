@@ -58,14 +58,21 @@ struct UsageSnapshot {
     let errorState: String?
 
     var menuBarTextSegments: [(label: String, usage: Int, usedPercent: Int)] {
-        var segments: [(label: String, usage: Int, usedPercent: Int)] = []
+        var segments: [(label: String, usage: Int, usedPercent: Int, rank: Int)] = []
         if let primaryUsage, let primaryUsedPercent {
-            segments.append((primaryLabel, primaryUsage, primaryUsedPercent))
+            segments.append((primaryLabel, primaryUsage, primaryUsedPercent, menuBarRank(for: primaryLabel)))
         }
         if let secondaryUsage, let secondaryLabel, let secondaryUsedPercent {
-            segments.append((secondaryLabel, secondaryUsage, secondaryUsedPercent))
+            segments.append((secondaryLabel, secondaryUsage, secondaryUsedPercent, menuBarRank(for: secondaryLabel)))
         }
         return segments
+            .sorted { left, right in
+                if left.rank == right.rank {
+                    return left.label < right.label
+                }
+                return left.rank < right.rank
+            }
+            .map { ($0.label, $0.usage, $0.usedPercent) }
     }
 
     var primaryDisplayText: String {
@@ -87,6 +94,17 @@ struct UsageSnapshot {
             lastUpdated: nil,
             errorState: nil
         )
+    }
+
+    private func menuBarRank(for label: String) -> Int {
+        let lowercase = label.lowercased()
+        if lowercase.contains("session") {
+            return 0
+        }
+        if lowercase.contains("week") {
+            return 1
+        }
+        return 2
     }
 }
 

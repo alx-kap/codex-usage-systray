@@ -5,7 +5,7 @@ import Combine
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private var popover: NSPopover!
+    private var panel: MenuBarPanel!
     private let usageService = UsageService.shared
     private let settingsManager = SettingsManager.shared
     private var notificationState = UsageNotificationState()
@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
-        setupPopover()
+        setupPanel()
         setupNotifications()
         startUsagePolling()
 
@@ -34,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(closePopover),
+            selector: #selector(closePanel),
             name: NSApplication.didResignActiveNotification,
             object: nil
         )
@@ -56,22 +56,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "chart.pie.fill", accessibilityDescription: "ChatGPT Codex Usage")
-            button.action = #selector(togglePopover)
+            button.action = #selector(togglePanel)
             button.target = self
         }
     }
 
-    private func setupPopover() {
-        popover = NSPopover()
-        popover.contentSize = NSSize(width: 280, height: 240)
-        popover.behavior = .transient
-        popover.animates = true
-        popover.contentViewController = NSHostingController(
+    private func setupPanel() {
+        let hostingController = NSHostingController(
             rootView: MenuBarView(
                 usageService: usageService,
                 settingsManager: settingsManager
             )
         )
+
+        panel = MenuBarPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 236, height: 302),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.contentViewController = hostingController
     }
 
     private func setupNotifications() {
@@ -89,23 +93,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    @objc private func togglePopover() {
-        if popover.isShown {
-            closePopover()
+    @objc private func togglePanel() {
+        if panel.isVisible {
+            closePanel()
         } else {
-            showPopover()
+            showPanel()
         }
     }
 
-    private func showPopover() {
-        if let button = statusItem.button {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            NSApp.activate(ignoringOtherApps: true)
-        }
+    private func showPanel() {
+        guard
+            let button = statusItem.button,
+            let buttonWindow = button.window
+        else { return }
+
+        let buttonFrameInWindow = button.convert(button.bounds, to: nil)
+        let buttonFrameOnScreen = buttonWindow.convertToScreen(buttonFrameInWindow)
+        let panelSize = panel.frame.size
+        let screenFrame = buttonWindow.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
+
+        var originX = buttonFrameOnScreen.midX - (panelSize.width / 2)
+        originX = min(
+            max(originX, screenFrame.minX + 8),
+            screenFrame.maxX - panelSize.width - 8
+        )
+
+        let originY = max(
+            screenFrame.minY + 8,
+            buttonFrameOnScreen.minY - panelSize.height - 6
+        )
+
+        panel.setFrameOrigin(NSPoint(x: round(originX), y: round(originY)))
+        panel.orderFrontRegardless()
+        NSApp.activate(ignoringOtherApps: true)
     }
 
-    @objc private func closePopover() {
-        popover.performClose(nil)
+    @objc private func closePanel() {
+        panel.orderOut(nil)
     }
 
     @objc private func settingsDidChange() {
@@ -238,5 +262,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 print("Notification error: \(error)")
             }
         }
+    }
+}
+
+private final class MenuBarPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+
+    override init(contentRect: NSRect, styleMask style: NSWindow.StyleMask, backing backingStoreType: NSWindow.BackingStoreType, defer flag: Bool) {
+        super.init(contentRect: contentRect, styleMask: style, backing: backingStoreType, defer: flag)
+
+        isReleasedWhenClosed = false
+        level = .statusBar
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        titleVisibility = .hidden
+        titlebarAppearsTransparent = true
+        hidesOnDeactivate = false
+        isMovable = false
+        isMovableByWindowBackground = false
+        animationBehavior = .utilityWindow
     }
 }
