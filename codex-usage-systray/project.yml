@@ -1,6 +1,6 @@
-name: ClaudeUsageSystray
+name: ChatGPTCodexUsageTray
 options:
-  bundleIdPrefix: com.claude
+  bundleIdPrefix: com.chatgpt
   deploymentTarget:
     macOS: "13.0"
   xcodeVersion: "15.0"
@@ -15,7 +15,7 @@ settings:
     DEVELOPMENT_TEAM: ""
 
 targets:
-  ClaudeUsageSystray:
+  CodexUsageSystray:
     type: application
     platform: macOS
     sources:
@@ -25,7 +25,8 @@ targets:
         type: group
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.claude.usage-systray
+        PRODUCT_BUNDLE_IDENTIFIER: com.chatgpt.codex-usage-tray
+        PRODUCT_NAME: CodexUsageSystray
         INFOPLIST_FILE: Resources/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
@@ -34,20 +35,20 @@ targets:
     dependencies:
       - sdk: Security.framework
     entitlements:
-      path: Resources/ClaudeUsageSystray.entitlements
+      path: Resources/CodexUsageSystray.entitlements
       properties:
         com.apple.security.app-sandbox: false
         com.apple.security.network.client: true
 
-  ClaudeUsageSystrayTests:
+  CodexUsageSystrayTests:
     type: bundle.unit-test
     platform: macOS
     sources:
       - path: Tests
         type: group
     dependencies:
-      - target: ClaudeUsageSystray
+      - target: CodexUsageSystray
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.claude.usage-systray-tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.chatgpt.codex-usage-tray-tests
         GENERATE_INFOPLIST_FILE: YES

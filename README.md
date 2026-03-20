@@ -1,88 +1,76 @@
-# Claude Usage Systray
+# ChatGPT Codex Usage Tray
 
-A lightweight macOS menu bar app that shows your [Claude.ai](https://claude.ai) plan usage in real time — current session and weekly limits — without opening a browser.
+A lightweight macOS menu bar app that shows your ChatGPT Codex usage at a glance without keeping the dashboard open in a browser.
 
-![Claude Usage Systray](claude-usage-systray/Resources/Assets.xcassets/Image.imageset/Image.png)
+Adapted from [adntgv/claude-usage-systray](https://github.com/adntgv/claude-usage-systray), with the macOS menu bar shell reworked for ChatGPT Codex usage.
 
-## What it shows
+![ChatGPT Codex Usage Tray](codex-usage-systray/Resources/Assets.xcassets/Image.imageset/Image.png)
 
-Mirrors the data on `claude.ai/settings/usage`:
+## What it does
 
-| Metric | Description |
-|--------|-------------|
-| **5h** | Current session usage (resets every ~5 hours) |
-| **7d** | Weekly all-models usage |
-| **Sonnet** | Weekly Sonnet-only usage (shown in popover) |
-
-Colors update based on your configured warning/critical thresholds.
+- Prefers the installed Codex desktop auth on your Mac when available
+- Polls `https://chatgpt.com/backend-api/wham/usage` for installed-Codex auth
+- Falls back to `https://chatgpt.com/codex/settings/usage` with a pasted browser cookie only when needed
+- Stores the optional fallback browser cookie string securely in macOS Keychain
+- Shows normalized primary and secondary quota metrics in the menu bar
+- Opens the full ChatGPT Codex dashboard on demand
+- Sends threshold notifications based on the primary quota metric
 
 ## Requirements
 
 - macOS 13+
-- [Claude Code](https://claude.ai/code) installed and logged in (the app reads its OAuth token from your Keychain — no separate credentials needed)
+- Either:
+  - the Codex desktop app installed and signed in on this Mac
+  - or a browser session that can open the ChatGPT Codex usage page successfully
 
-## Install
+## Authentication
 
-**Homebrew (recommended):**
+This app now prefers the local Codex desktop sign-in automatically.
 
-```bash
-brew tap adntgv/tap
-brew install --cask claude-usage-systray
-```
+### Recommended: installed Codex auth
 
-**Manual:**
+1. Install the Codex desktop app and sign in there.
+2. Launch this menu bar app.
+3. It will automatically read the local Codex auth and use it for usage refreshes.
 
-Download the latest `ClaudeUsageSystray.zip` from the [Releases page](https://github.com/adntgv/claude-usage-systray/releases), unzip, and move `ClaudeUsageSystray.app` to `/Applications`. The app is notarized — macOS will open it normally on first launch.
+### Fallback: manual browser session
+
+1. Open `https://chatgpt.com/codex/settings/usage` in your browser.
+2. Open Developer Tools and inspect the request headers for that page.
+3. Copy the full `Cookie` header value.
+4. Paste it into the app's Settings screen.
+
+The app validates the pasted fallback value immediately before storing it in your Keychain.
+
+## Notes on reliability
+
+- The installed-Codex path uses `https://chatgpt.com/backend-api/wham/usage`, which appears to be what the Codex desktop app itself calls. It is not a public API and may change without notice.
+- The manual fallback path still depends on the web dashboard and Cloudflare. In practice, the cookie string may need to include Cloudflare cookies such as `cf_clearance`.
+- The app understands both the backend JSON payload and the dashboard HTML/embedded JSON fallback.
 
 ## Build from source
 
 ```bash
-git clone https://github.com/adntgv/claude-usage-systray
-cd claude-usage-systray/claude-usage-systray
-xcodebuild -scheme ClaudeUsageSystray -configuration Release build
-open ~/Library/Developer/Xcode/DerivedData/ClaudeUsageSystray-*/Build/Products/Release/ClaudeUsageSystray.app
+cd codex-usage-systray
+xcodebuild -project CodexUsageSystray.xcodeproj \
+  -scheme CodexUsageSystray \
+  -configuration Release build
+open ~/Library/Developer/Xcode/DerivedData/CodexUsageSystray-*/Build/Products/Release/CodexUsageSystray.app
 ```
 
-Or open `ClaudeUsageSystray.xcodeproj` in Xcode and run with ⌘R.
-
-## Display modes
-
-Toggle **Compact display** in Settings to switch between:
-
-- **Compact (default):** `35% · 71%` — both 5h and 7d inline, each colored by threshold
-- **Normal:** icon + `71%` — weekly usage only
-
-## How it works
-
-The app reads your Claude Code OAuth token from the macOS Keychain (`Claude Code-credentials`) and calls the same internal endpoint that powers `claude.ai/settings/usage`:
-
-```
-GET https://api.anthropic.com/api/oauth/usage
-Authorization: Bearer <oauth_token>
-anthropic-beta: oauth-2025-04-20
-```
-
-The token is read once at startup and cached in memory. It refreshes automatically when you restart the app (Claude Code keeps it current in the Keychain).
-
-> **Note:** This endpoint is undocumented and may change. It requires Claude Code to be installed and logged in.
-
-## Settings
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Compact display | On | Show both 5h and 7d in menu bar |
-| Warning threshold | 80% | Orange color above this |
-| Critical threshold | 90% | Red color above this |
-| Usage alerts | On | macOS notification when thresholds are crossed |
-
-## Running tests
+## Run tests
 
 ```bash
-xcodebuild test -project ClaudeUsageSystray.xcodeproj \
-  -scheme ClaudeUsageSystrayTests \
+xcodebuild test -project codex-usage-systray/CodexUsageSystray.xcodeproj \
+  -scheme CodexUsageSystray \
   -destination 'platform=macOS'
 ```
 
 ## License
 
 MIT
+
+## Credits
+
+- Original project: [adntgv/claude-usage-systray](https://github.com/adntgv/claude-usage-systray)
+- This repository adapts that menu bar app for ChatGPT Codex usage on macOS

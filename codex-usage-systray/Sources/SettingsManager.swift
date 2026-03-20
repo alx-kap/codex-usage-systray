@@ -8,7 +8,7 @@ final class SettingsManager: ObservableObject {
     }
 
     private let defaults = UserDefaults.standard
-    private let settingsKey = "ClaudeUsageSettings"
+    private let settingsKey = "ChatGPTCodexUsageSettings"
 
     private init() {
         if let data = defaults.data(forKey: settingsKey),
