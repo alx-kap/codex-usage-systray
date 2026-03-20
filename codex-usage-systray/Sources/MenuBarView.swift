@@ -92,22 +92,17 @@ struct MenuBarView: View {
     }
 
     private var usageHeader: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            usageRow(
-                icon: usageIconName(for: usageService.currentUsage.primaryUsedPercent),
-                color: usageColor(for: usageService.currentUsage.primaryUsedPercent),
-                label: usageService.currentUsage.primaryLabel,
-                utilization: usageService.currentUsage.primaryUsage,
-                resetIn: usageService.currentUsage.primaryResetIn
-            )
+        let rows = quotaRows
 
-            if let secondaryLabel = usageService.currentUsage.secondaryLabel {
+        return VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { entry in
+                let row = entry.element
                 usageRow(
-                    icon: "calendar",
-                    color: usageColor(for: usageService.currentUsage.secondaryUsedPercent),
-                    label: secondaryLabel,
-                    utilization: usageService.currentUsage.secondaryUsage,
-                    resetIn: usageService.currentUsage.secondaryResetIn
+                    icon: row.icon,
+                    color: usageColor(for: row.usedPercent),
+                    label: row.label,
+                    utilization: row.utilization,
+                    resetIn: row.resetIn
                 )
             }
 
@@ -128,6 +123,47 @@ struct MenuBarView: View {
             }
         }
         .padding(.horizontal, 12)
+    }
+
+    private var quotaRows: [(label: String, utilization: Int?, usedPercent: Int?, resetIn: String?, icon: String)] {
+        var rows: [(label: String, utilization: Int?, usedPercent: Int?, resetIn: String?, icon: String, rank: Int)] = [
+            (
+                label: normalizedQuotaLabel(usageService.currentUsage.primaryLabel),
+                utilization: usageService.currentUsage.primaryUsage,
+                usedPercent: usageService.currentUsage.primaryUsedPercent,
+                resetIn: usageService.currentUsage.primaryResetIn,
+                icon: quotaIconName(
+                    for: usageService.currentUsage.primaryLabel,
+                    usedPercent: usageService.currentUsage.primaryUsedPercent
+                ),
+                rank: quotaDisplayRank(for: usageService.currentUsage.primaryLabel)
+            )
+        ]
+
+        if let secondaryLabel = usageService.currentUsage.secondaryLabel {
+            rows.append(
+                (
+                    label: normalizedQuotaLabel(secondaryLabel),
+                    utilization: usageService.currentUsage.secondaryUsage,
+                    usedPercent: usageService.currentUsage.secondaryUsedPercent,
+                    resetIn: usageService.currentUsage.secondaryResetIn,
+                    icon: quotaIconName(
+                        for: secondaryLabel,
+                        usedPercent: usageService.currentUsage.secondaryUsedPercent
+                    ),
+                    rank: quotaDisplayRank(for: secondaryLabel)
+                )
+            )
+        }
+
+        return rows
+            .sorted { left, right in
+                if left.rank == right.rank {
+                    return left.label < right.label
+                }
+                return left.rank < right.rank
+            }
+            .map { ($0.label, $0.utilization, $0.usedPercent, $0.resetIn, $0.icon) }
     }
 
     private var modelBreakdown: some View {
@@ -242,6 +278,35 @@ struct MenuBarView: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .short
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    private func normalizedQuotaLabel(_ label: String) -> String {
+        if label.lowercased().contains("session") {
+            return "5 Hour"
+        }
+        return label
+    }
+
+    private func quotaDisplayRank(for label: String) -> Int {
+        let lowercase = label.lowercased()
+        if lowercase.contains("session") {
+            return 0
+        }
+        if lowercase.contains("week") {
+            return 1
+        }
+        return 2
+    }
+
+    private func quotaIconName(for label: String, usedPercent: Int?) -> String {
+        let lowercase = label.lowercased()
+        if lowercase.contains("session") {
+            return usageIconName(for: usedPercent)
+        }
+        if lowercase.contains("week") {
+            return "calendar"
+        }
+        return "chart.pie"
     }
 
     private var connectTitle: String {
