@@ -2,16 +2,13 @@ import SwiftUI
 import AppKit
 
 fileprivate enum MenuBarVisualTokens {
-    static let containerCornerRadius: CGFloat = 17
-    static let sectionCornerRadius: CGFloat = 12
-    static let rowCornerRadius: CGFloat = 9
-    static let containerPadding: CGFloat = 5
-    static let sectionPadding: CGFloat = 5
-    static let rowPadding = EdgeInsets(top: 3, leading: 6, bottom: 3, trailing: 6)
-    static let sectionSpacing: CGFloat = 4
-    static let borderOpacity: Double = 0.18
-    static let shadowOpacity: Double = 0.08
-    static let hoverOpacity: Double = 0.55
+    static let contentWidth: CGFloat = 232
+    static let rowCornerRadius: CGFloat = 10
+    static let containerPadding: CGFloat = 14
+    static let rowPadding = EdgeInsets(top: 5, leading: 6, bottom: 5, trailing: 6)
+    static let sectionSpacing: CGFloat = 10
+    static let dividerOpacity: Double = 0.18
+    static let hoverOpacity: Double = 0.09
 }
 
 struct MenuBarView: View {
@@ -22,32 +19,30 @@ struct MenuBarView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        ZStack {
-            PopoverGlassBackground(reduceTransparency: reduceTransparency)
-                .clipShape(RoundedRectangle(cornerRadius: MenuBarVisualTokens.containerCornerRadius, style: .continuous))
-                .overlay(containerGlow)
-                .overlay(containerOverlay)
-                .shadow(color: .black.opacity(MenuBarVisualTokens.shadowOpacity), radius: 18, x: 0, y: 8)
+        VStack(spacing: 0) {
+            if usageService.authState.needsSession {
+                connectState
+            } else {
+                usageSection
 
-            VStack(spacing: MenuBarVisualTokens.sectionSpacing) {
-                Group {
-                    if usageService.authState.needsSession {
-                        connectState
-                    } else {
-                        usageSection
-
-                        if !usageService.currentUsage.breakdowns.isEmpty {
-                            secondaryMetricsSection
-                        }
-
-                        actionSection
-                        quitSection
-                    }
+                if !usageService.currentUsage.breakdowns.isEmpty {
+                    sectionDivider
+                        .padding(.vertical, MenuBarVisualTokens.sectionSpacing)
+                    secondaryMetricsSection
                 }
+
+                sectionDivider
+                    .padding(.vertical, MenuBarVisualTokens.sectionSpacing)
+                actionSection
+
+                sectionDivider
+                    .padding(.vertical, MenuBarVisualTokens.sectionSpacing)
+                quitSection
             }
-            .padding(MenuBarVisualTokens.containerPadding)
         }
-        .frame(width: 232, height: 302, alignment: .top)
+        .padding(MenuBarVisualTokens.containerPadding)
+        .frame(width: MenuBarVisualTokens.contentWidth, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
         .sheet(isPresented: $showSettings) {
             SettingsView(settingsManager: settingsManager, usageService: usageService)
         }
@@ -65,152 +60,122 @@ struct MenuBarView: View {
         }
     }
 
-    private var reduceTransparency: Bool {
-        NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-    }
-
-    private var containerOverlay: some View {
-        RoundedRectangle(cornerRadius: MenuBarVisualTokens.containerCornerRadius, style: .continuous)
-            .strokeBorder(
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(0.34),
-                        Color(red: 0.72, green: 0.84, blue: 1.0).opacity(0.12),
-                        Color.white.opacity(0.06)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                ),
-                lineWidth: 0.9
-            )
-    }
-
-    private var containerGlow: some View {
-        RoundedRectangle(cornerRadius: MenuBarVisualTokens.containerCornerRadius, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(reduceTransparency ? 0.18 : 0.12),
-                        Color(red: 0.78, green: 0.9, blue: 1.0).opacity(reduceTransparency ? 0.16 : 0.1),
-                        Color.clear
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-    }
-
     private var connectState: some View {
-        GlassSection(delay: 0.0, isPresented: isPresented, reduceMotion: reduceMotion) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 8) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .fill(tintColor.opacity(0.14))
-                            .frame(width: 26, height: 26)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                Circle()
+                    .fill(tintColor.opacity(0.14))
+                    .frame(width: 28, height: 28)
+                    .overlay {
                         Image(systemName: usageService.authState == .invalidSession ? "exclamationmark.triangle.fill" : "lock.shield.fill")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(tintColor)
                     }
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(connectTitle)
-                            .font(.system(size: 13, weight: .semibold))
-                        Text(connectSubtitle)
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-
-                if let error = usageService.error {
-                    Text(error)
-                        .font(.system(size: 9))
-                        .foregroundStyle(.red)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(connectTitle)
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(connectSubtitle)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+            }
 
-                VStack(spacing: 5) {
-                    if usageService.hasInstalledCodexAuth {
-                        actionRowButton(
-                            title: "Use Installed Codex",
-                            systemImage: "sparkles",
-                            action: refreshUsage
-                        )
-                    }
+            if let error = usageService.error {
+                Label(error, systemImage: "exclamationmark.circle.fill")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
+            VStack(spacing: 3) {
+                if usageService.hasInstalledCodexAuth {
                     actionRowButton(
-                        title: usageService.hasInstalledCodexAuth ? "Manual Fallback" : (usageService.authState == .invalidSession ? "Update Session" : "Paste Session"),
-                        systemImage: "key.fill",
-                        action: { showSettings = true }
+                        title: "Use Installed Codex",
+                        systemImage: "sparkles",
+                        action: refreshUsage
                     )
                 }
-            }
-        }
-    }
 
-    private var usageSection: some View {
-        GlassSection(delay: 0.0, isPresented: isPresented, reduceMotion: reduceMotion) {
-            VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(quotaRows.enumerated()), id: \.offset) { entry in
-                        if entry.offset > 0 {
-                            glassSeparator
-                                .padding(.vertical, 3)
-                        }
-                        quotaRow(entry.element, isPrimary: entry.offset == 0)
-                    }
-                }
-
-                statusFooter
-                    .padding(.top, 4)
-            }
-        }
-    }
-
-    private var secondaryMetricsSection: some View {
-        GlassSection(delay: 0.04, isPresented: isPresented, reduceMotion: reduceMotion) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Additional Limits")
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-
-                VStack(spacing: 0) {
-                    ForEach(Array(usageService.currentUsage.breakdowns.enumerated()), id: \.offset) { entry in
-                        if entry.offset > 0 {
-                            glassSeparator
-                                .padding(.vertical, 3)
-                        }
-                        secondaryMetricRow(entry.element)
-                    }
-                }
-            }
-        }
-    }
-
-    private var actionSection: some View {
-        GlassSection(delay: 0.08, isPresented: isPresented, reduceMotion: reduceMotion) {
-            VStack(spacing: 0) {
-                actionRowButton(title: "Open Dashboard", systemImage: "chart.bar", action: openDashboard)
-                glassSeparator
-                    .padding(.vertical, 3)
-                actionRowButton(title: "Refresh", systemImage: "arrow.clockwise", action: refreshUsage)
-                glassSeparator
-                    .padding(.vertical, 3)
                 actionRowButton(
-                    title: usageService.authState.needsSession ? (usageService.hasInstalledCodexAuth ? "Auth Options" : "Paste Session") : "Settings",
-                    systemImage: usageService.authState.needsSession ? "key.fill" : "gearshape",
+                    title: usageService.hasInstalledCodexAuth ? "Manual Fallback" : (usageService.authState == .invalidSession ? "Update Session" : "Paste Session"),
+                    systemImage: "key.fill",
                     action: { showSettings = true }
                 )
             }
         }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.07))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.8)
+                )
+        )
+        .opacity(isPresented ? 1 : 0)
+        .offset(y: reduceMotion ? 0 : (isPresented ? 0 : 10))
+        .animation(sectionAnimation(delay: 0.0), value: isPresented)
+    }
+
+    private var usageSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(quotaRows.enumerated()), id: \.offset) { entry in
+                if entry.offset > 0 {
+                    sectionDivider
+                        .padding(.vertical, 5)
+                }
+                quotaRow(entry.element, isPrimary: entry.offset == 0)
+            }
+
+            statusFooter
+                .padding(.top, 8)
+        }
+        .opacity(isPresented ? 1 : 0)
+        .offset(y: reduceMotion ? 0 : (isPresented ? 0 : 8))
+        .animation(sectionAnimation(delay: 0.0), value: isPresented)
+    }
+
+    private var secondaryMetricsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Additional Limits")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(usageService.currentUsage.breakdowns.enumerated()), id: \.offset) { entry in
+                    if entry.offset > 0 {
+                        sectionDivider
+                            .padding(.vertical, 5)
+                    }
+                    secondaryMetricRow(entry.element)
+                }
+            }
+        }
+        .opacity(isPresented ? 1 : 0)
+        .offset(y: reduceMotion ? 0 : (isPresented ? 0 : 8))
+        .animation(sectionAnimation(delay: 0.03), value: isPresented)
+    }
+
+    private var actionSection: some View {
+        VStack(spacing: 2) {
+            actionRowButton(title: "Open Dashboard", systemImage: "chart.bar", action: openDashboard)
+            actionRowButton(title: "Refresh", systemImage: "arrow.clockwise", action: refreshUsage)
+            actionRowButton(title: "Settings", systemImage: "gearshape", action: { showSettings = true })
+        }
+        .opacity(isPresented ? 1 : 0)
+        .offset(y: reduceMotion ? 0 : (isPresented ? 0 : 8))
+        .animation(sectionAnimation(delay: 0.06), value: isPresented)
     }
 
     private var quitSection: some View {
-        GlassSection(delay: 0.12, isPresented: isPresented, reduceMotion: reduceMotion, isDetached: true) {
-            actionRowButton(title: "Quit", systemImage: "power", action: quitApp)
-        }
+        actionRowButton(title: "Quit", systemImage: "power", action: quitApp)
+            .opacity(isPresented ? 1 : 0)
+            .offset(y: reduceMotion ? 0 : (isPresented ? 0 : 8))
+            .animation(sectionAnimation(delay: 0.09), value: isPresented)
     }
 
     private var quotaRows: [QuotaRowModel] {
@@ -255,53 +220,50 @@ struct MenuBarView: View {
     private var statusFooter: some View {
         Group {
             if let error = usageService.error {
-                footerPill {
-                    Label(error, systemImage: "exclamationmark.circle.fill")
-                        .foregroundStyle(.red)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Label(error, systemImage: "exclamationmark.circle.fill")
+                    .foregroundStyle(.red)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
             } else if usageService.isLoading {
-                footerPill {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .controlSize(.small)
-                        Text("Refreshing usage…")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
-            } else if let lastUpdated = usageService.currentUsage.lastUpdated {
-                footerPill {
-                    Label("Updated \(relativeTimestamp(for: lastUpdated))", systemImage: "clock")
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Refreshing usage…")
                         .foregroundStyle(.secondary)
                 }
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
+            } else if let lastUpdated = usageService.currentUsage.lastUpdated {
+                Label(updatedStatusText(for: lastUpdated), systemImage: "clock")
+                    .foregroundStyle(.secondary)
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
             }
         }
+        .font(.system(size: 10, weight: .medium))
+        .frame(maxWidth: .infinity, alignment: .leading)
         .animation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.28, dampingFraction: 0.88), value: usageService.isLoading)
         .animation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.28, dampingFraction: 0.88), value: usageService.error)
         .animation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.28, dampingFraction: 0.88), value: usageService.currentUsage.lastUpdated)
     }
 
     private func quotaRow(_ row: QuotaRowModel, isPrimary: Bool) -> some View {
-        HStack(spacing: 6) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(usageColor(for: row.usedPercent).opacity(isPrimary ? 0.16 : 0.11))
-                    .frame(width: 18, height: 18)
-                Image(systemName: row.icon)
-                    .font(.system(size: isPrimary ? 12 : 11, weight: .semibold))
-                    .foregroundStyle(usageColor(for: row.usedPercent))
-            }
+        HStack(spacing: 8) {
+            Circle()
+                .fill(usageColor(for: row.usedPercent).opacity(isPrimary ? 0.14 : 0.1))
+                .frame(width: 22, height: 22)
+                .overlay {
+                    Image(systemName: row.icon)
+                        .font(.system(size: isPrimary ? 12 : 11, weight: .semibold))
+                        .foregroundStyle(usageColor(for: row.usedPercent))
+                }
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(row.label)
-                    .font(.system(size: 9, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.secondary)
+
                 if let utilization = row.utilization {
                     Text("\(utilization)%")
-                        .font(.system(size: isPrimary ? 13 : 12, weight: .semibold, design: .rounded))
+                        .font(.system(size: isPrimary ? 14 : 13, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(.primary)
                 }
@@ -311,7 +273,7 @@ struct MenuBarView: View {
 
             if let resetIn = row.resetIn {
                 Text(resetIn)
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -322,21 +284,22 @@ struct MenuBarView: View {
 
     private func secondaryMetricRow(_ metric: UsageBreakdown) -> some View {
         HStack(spacing: 7) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.accentColor.opacity(0.12))
-                    .frame(width: 16, height: 16)
-                Image(systemName: "cpu")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-            }
+            Circle()
+                .fill(Color.accentColor.opacity(0.12))
+                .frame(width: 20, height: 20)
+                .overlay {
+                    Image(systemName: "cpu")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                }
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(metric.label)
-                    .font(.system(size: 8, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.secondary)
+
                 Text("\(metric.utilization)%")
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .monospacedDigit()
             }
 
@@ -344,38 +307,13 @@ struct MenuBarView: View {
 
             if let resetIn = metric.resetIn {
                 Text(resetIn)
-                    .font(.system(size: 8, weight: .medium, design: .rounded))
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
         }
         .padding(MenuBarVisualTokens.rowPadding)
-    }
-
-    private func footerPill<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .font(.system(size: 8, weight: .medium))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(reduceTransparency ? 0.62 : 0.16),
-                                Color(red: 0.76, green: 0.88, blue: 1.0).opacity(reduceTransparency ? 0.2 : 0.08)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.9)
-                    )
-            )
     }
 
     private func actionRowButton(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
@@ -386,32 +324,23 @@ struct MenuBarView: View {
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(.primary)
                     .frame(width: 13)
+
                 Text(title)
                     .font(.system(size: 11, weight: .medium))
                     .lineLimit(1)
+
                 Spacer(minLength: 0)
             }
             .padding(MenuBarVisualTokens.rowPadding)
             .contentShape(RoundedRectangle(cornerRadius: MenuBarVisualTokens.rowCornerRadius, style: .continuous))
         }
-        .buttonStyle(GlassActionButtonStyle(reduceTransparency: reduceTransparency))
+        .buttonStyle(GlassActionButtonStyle())
     }
 
-    private var glassSeparator: some View {
+    private var sectionDivider: some View {
         Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(0),
-                        Color.white.opacity(0.16),
-                        Color(red: 0.76, green: 0.88, blue: 1.0).opacity(0.08),
-                        Color.white.opacity(0)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .frame(height: 0.75)
+            .fill(Color.primary.opacity(MenuBarVisualTokens.dividerOpacity))
+            .frame(height: 0.8)
     }
 
     private var tintColor: Color {
@@ -438,6 +367,14 @@ struct MenuBarView: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .short
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    private func updatedStatusText(for date: Date) -> String {
+        let elapsed = Date().timeIntervalSince(date)
+        if elapsed < 60 {
+            return "Updated just now"
+        }
+        return "Updated \(relativeTimestamp(for: date))"
     }
 
     private func normalizedQuotaLabel(_ label: String) -> String {
@@ -496,6 +433,75 @@ struct MenuBarView: View {
     private func quitApp() {
         NSApplication.shared.terminate(nil)
     }
+
+    private func sectionAnimation(delay: Double) -> Animation {
+        if reduceMotion {
+            return .easeOut(duration: 0.14).delay(delay)
+        }
+        return .spring(response: 0.34, dampingFraction: 0.9).delay(delay)
+    }
+}
+
+struct StatusItemLabelView: View {
+    @ObservedObject var usageService: UsageService
+    @ObservedObject var settingsManager: SettingsManager
+
+    var body: some View {
+        Group {
+            if usageService.authState.needsSession {
+                HStack(spacing: 4) {
+                    Image(systemName: usageService.authState == .invalidSession ? "exclamationmark.triangle.fill" : "key.fill")
+                    Text(usageService.authState == .invalidSession ? "Expired" : "Connect")
+                }
+                .foregroundStyle(.primary)
+            } else if settingsManager.settings.compactDisplay, !usageService.currentUsage.menuBarTextSegments.isEmpty {
+                Text(compactStatusText)
+                    .foregroundStyle(.primary)
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: iconName(for: usageService.currentUsage.primaryUsedPercent))
+                    Text(labelText)
+                        .foregroundStyle(usageColor(for: usageService.currentUsage.primaryUsedPercent))
+                }
+            }
+        }
+        .font(.system(size: 12, weight: .medium, design: .rounded))
+        .monospacedDigit()
+        .fixedSize()
+    }
+
+    private var compactStatusText: String {
+        usageService.currentUsage.menuBarTextSegments
+            .map { "\($0.usage)%" }
+            .joined(separator: " · ")
+    }
+
+    private var labelText: String {
+        if let primaryUsage = usageService.currentUsage.primaryUsage {
+            return "\(primaryUsage)%"
+        }
+        return usageService.currentUsage.primaryLabel
+    }
+
+    private func iconName(for percentage: Int?) -> String {
+        guard let percentage else { return "chart.pie" }
+        if percentage >= 80 { return "exclamationmark.triangle.fill" }
+        if percentage >= 50 { return "chart.pie.fill" }
+        return "chart.pie"
+    }
+
+    private func usageColor(for percentage: Int?) -> Color {
+        guard let percentage else { return .primary }
+        let criticalThreshold = Int(settingsManager.settings.criticalThreshold)
+        let warningThreshold = Int(settingsManager.settings.warningThreshold)
+        if percentage >= criticalThreshold {
+            return .red
+        }
+        if percentage >= warningThreshold {
+            return .orange
+        }
+        return .primary
+    }
 }
 
 private struct QuotaRowModel {
@@ -507,71 +513,14 @@ private struct QuotaRowModel {
     let rank: Int
 }
 
-private struct GlassSection<Content: View>: View {
-    let delay: Double
-    let isPresented: Bool
-    let reduceMotion: Bool
-    var isDetached: Bool = false
-    @ViewBuilder let content: () -> Content
-
-    var body: some View {
-        content()
-            .padding(MenuBarVisualTokens.sectionPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: MenuBarVisualTokens.sectionCornerRadius, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(shouldReduceTransparency ? 0.52 : 0.16),
-                                Color.white.opacity(shouldReduceTransparency ? 0.34 : 0.08),
-                                Color(red: 0.77, green: 0.89, blue: 1.0).opacity(isDetached ? 0.12 : 0.08)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: MenuBarVisualTokens.sectionCornerRadius, style: .continuous)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.26),
-                                        Color(red: 0.76, green: 0.88, blue: 1.0).opacity(0.1),
-                                        Color.white.opacity(0.06)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 0.9
-                            )
-                    )
-                    .shadow(color: .black.opacity(isDetached ? 0.045 : 0.03), radius: isDetached ? 8 : 5, x: 0, y: isDetached ? 5 : 2)
-            )
-            .opacity(isPresented ? 1 : 0)
-            .offset(y: reduceMotion ? 0 : (isPresented ? 0 : 10))
-            .animation(
-                reduceMotion ? .easeOut(duration: 0.14).delay(delay) : .spring(response: 0.34, dampingFraction: 0.9).delay(delay),
-                value: isPresented
-            )
-    }
-
-    private var shouldReduceTransparency: Bool {
-        NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-    }
-}
-
 private struct GlassActionButtonStyle: ButtonStyle {
-    let reduceTransparency: Bool
-
     func makeBody(configuration: Configuration) -> some View {
-        HoverActionBody(configuration: configuration, reduceTransparency: reduceTransparency)
+        HoverActionBody(configuration: configuration)
     }
 }
 
 private struct HoverActionBody: View {
     let configuration: ButtonStyle.Configuration
-    let reduceTransparency: Bool
     @State private var isHovered = false
 
     var body: some View {
@@ -581,11 +530,11 @@ private struct HoverActionBody: View {
                     .fill(backgroundColor)
                     .overlay(
                         RoundedRectangle(cornerRadius: MenuBarVisualTokens.rowCornerRadius, style: .continuous)
-                            .strokeBorder(Color.white.opacity(strokeOpacity), lineWidth: 0.9)
+                            .strokeBorder(Color.white.opacity(strokeOpacity), lineWidth: 0.8)
                     )
             )
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .opacity(configuration.isPressed ? 0.96 : 1)
+            .opacity(configuration.isPressed ? 0.97 : 1)
             .onHover { hovering in
                 isHovered = hovering
             }
@@ -595,44 +544,18 @@ private struct HoverActionBody: View {
 
     private var backgroundColor: Color {
         if configuration.isPressed {
-            return Color.white.opacity(reduceTransparency ? 0.34 : 0.18)
+            return Color.primary.opacity(0.18)
         }
         if isHovered {
-            return Color.white.opacity(reduceTransparency ? 0.22 : MenuBarVisualTokens.hoverOpacity * 0.16)
+            return Color.primary.opacity(MenuBarVisualTokens.hoverOpacity)
         }
-        return Color.white.opacity(reduceTransparency ? 0.08 : 0.03)
+        return .clear
     }
 
     private var strokeOpacity: Double {
         if isHovered || configuration.isPressed {
-            return 0.14
+            return 0.04
         }
-        return 0.04
-    }
-}
-
-private struct PopoverGlassBackground: NSViewRepresentable {
-    let reduceTransparency: Bool
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        configure(view)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        configure(nsView)
-    }
-
-    private func configure(_ view: NSVisualEffectView) {
-        view.blendingMode = .behindWindow
-        view.state = .active
-        if reduceTransparency {
-            view.material = .windowBackground
-            view.isEmphasized = false
-        } else {
-            view.material = .popover
-            view.isEmphasized = false
-        }
+        return 0.02
     }
 }
