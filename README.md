@@ -23,6 +23,7 @@ The goal is simple: make your usage feel visible, lightweight, and native to mac
 - Native-style menu bar experience
 - Compact quota summary directly in the menu bar
 - Fast dropdown for current usage and reset timing
+- Borderless native-feeling Settings window with liquid glass styling that matches the menu popup
 - Automatic use of your existing Codex desktop sign-in when possible
 - Secure fallback session storage in macOS Keychain
 - Optional notifications as you approach your limit

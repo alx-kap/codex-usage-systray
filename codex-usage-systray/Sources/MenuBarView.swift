@@ -14,7 +14,6 @@ fileprivate enum MenuBarVisualTokens {
 struct MenuBarView: View {
     @ObservedObject var usageService: UsageService
     @ObservedObject var settingsManager: SettingsManager
-    @State private var showSettings = false
     @State private var isPresented = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -43,9 +42,6 @@ struct MenuBarView: View {
         .padding(MenuBarVisualTokens.containerPadding)
         .frame(width: MenuBarVisualTokens.contentWidth, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
-        .sheet(isPresented: $showSettings) {
-            SettingsView(settingsManager: settingsManager, usageService: usageService)
-        }
         .onAppear {
             if reduceMotion {
                 isPresented = true
@@ -101,7 +97,7 @@ struct MenuBarView: View {
                 actionRowButton(
                     title: usageService.hasInstalledCodexAuth ? "Manual Fallback" : (usageService.authState == .invalidSession ? "Update Session" : "Paste Session"),
                     systemImage: "key.fill",
-                    action: { showSettings = true }
+                    action: openSettings
                 )
             }
         }
@@ -164,7 +160,7 @@ struct MenuBarView: View {
         VStack(spacing: 2) {
             actionRowButton(title: "Open Dashboard", systemImage: "chart.bar", action: openDashboard)
             actionRowButton(title: "Refresh", systemImage: "arrow.clockwise", action: refreshUsage)
-            actionRowButton(title: "Settings", systemImage: "gearshape", action: { showSettings = true })
+            actionRowButton(title: "Settings", systemImage: "gearshape", action: openSettings)
         }
         .opacity(isPresented ? 1 : 0)
         .offset(y: reduceMotion ? 0 : (isPresented ? 0 : 8))
@@ -430,6 +426,51 @@ struct MenuBarView: View {
         usageService.fetchUsage()
     }
 
+    private func openSettings() {
+        Task { @MainActor in
+            let menuGlassProfile = currentMenuGlassProfile()
+            hideMenuPresentationWindows()
+            SettingsWindowPresenter.shared.show(
+                settingsManager: settingsManager,
+                usageService: usageService,
+                preferredGlassProfile: menuGlassProfile
+            )
+        }
+    }
+
+    @MainActor
+    private func hideMenuPresentationWindows() {
+        for window in NSApp.windows where window.isVisible && isLikelyMenuPresentationWindow(window) {
+            window.orderOut(nil)
+        }
+    }
+
+    private func isLikelyMenuPresentationWindow(_ window: NSWindow) -> Bool {
+        let className = NSStringFromClass(type(of: window))
+        if className.contains("MenuBarExtra") || className.contains("Popover") {
+            return true
+        }
+
+        let size = window.frame.size
+        let untitledBorderless = window.title.isEmpty && !window.styleMask.contains(.titled)
+        let menuLevel = window.level == .popUpMenu || window.level == .statusBar
+        return untitledBorderless && menuLevel && size.width < 360 && size.height < 900
+    }
+
+    @MainActor
+    private func currentMenuGlassProfile() -> MenuGlassProfile? {
+        for window in NSApp.windows where window.isVisible && isLikelyMenuPresentationWindow(window) {
+            if let visualEffectView = window.contentView?.firstDescendant(of: NSVisualEffectView.self) {
+                return MenuGlassProfile(
+                    material: visualEffectView.material,
+                    blendingMode: visualEffectView.blendingMode,
+                    state: visualEffectView.state
+                )
+            }
+        }
+        return nil
+    }
+
     private func quitApp() {
         NSApplication.shared.terminate(nil)
     }
@@ -511,6 +552,129 @@ private struct QuotaRowModel {
     let resetIn: String?
     let icon: String
     let rank: Int
+}
+
+private struct MenuGlassProfile {
+    let material: NSVisualEffectView.Material
+    let blendingMode: NSVisualEffectView.BlendingMode
+    let state: NSVisualEffectView.State
+}
+
+@MainActor
+private final class SettingsWindowPresenter {
+    static let shared = SettingsWindowPresenter()
+
+    private var window: NSWindow?
+    private var closeObserver: WindowCloseObserver?
+
+    private init() {}
+
+    func show(
+        settingsManager: SettingsManager,
+        usageService: UsageService,
+        preferredGlassProfile: MenuGlassProfile? = nil
+    ) {
+        if let window {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let windowSize = CGSize(width: 460, height: 520)
+
+        let window = BorderlessKeyWindow(
+            contentRect: NSRect(origin: .zero, size: windowSize),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+
+        window.isMovableByWindowBackground = true
+        window.isReleasedWhenClosed = false
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = true
+        window.center()
+        window.collectionBehavior = [.transient, .moveToActiveSpace]
+
+        let visualEffectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: windowSize))
+        let glassProfile = preferredGlassProfile ?? MenuGlassProfile(
+            material: .menu,
+            blendingMode: .behindWindow,
+            state: .followsWindowActiveState
+        )
+        visualEffectView.material = glassProfile.material
+        visualEffectView.blendingMode = glassProfile.blendingMode
+        visualEffectView.state = glassProfile.state
+        visualEffectView.wantsLayer = true
+        visualEffectView.layer?.cornerRadius = 28
+        visualEffectView.layer?.masksToBounds = true
+
+        let rootView = SettingsView(
+            settingsManager: settingsManager,
+            usageService: usageService,
+            onClose: { [weak window] in
+                window?.close()
+            }
+        )
+        .background(.clear)
+        .ignoresSafeArea()
+
+        let hostingView = NSHostingView(rootView: rootView)
+        hostingView.translatesAutoresizingMaskIntoConstraints = false
+
+        visualEffectView.addSubview(hostingView)
+        NSLayoutConstraint.activate([
+            hostingView.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor),
+            hostingView.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor),
+            hostingView.topAnchor.constraint(equalTo: visualEffectView.topAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: visualEffectView.bottomAnchor)
+        ])
+
+        window.contentView = visualEffectView
+        let closeObserver = WindowCloseObserver { [weak self] in
+            self?.window = nil
+            self?.closeObserver = nil
+        }
+        self.closeObserver = closeObserver
+        window.delegate = closeObserver
+
+        self.window = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+private final class WindowCloseObserver: NSObject, NSWindowDelegate {
+    private let onClose: () -> Void
+
+    init(onClose: @escaping () -> Void) {
+        self.onClose = onClose
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        onClose()
+    }
+}
+
+private final class BorderlessKeyWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
+private extension NSView {
+    func firstDescendant<T: NSView>(of viewType: T.Type) -> T? {
+        if let match = self as? T {
+            return match
+        }
+
+        for subview in subviews {
+            if let match = subview.firstDescendant(of: viewType) {
+                return match
+            }
+        }
+        return nil
+    }
 }
 
 private struct GlassActionButtonStyle: ButtonStyle {

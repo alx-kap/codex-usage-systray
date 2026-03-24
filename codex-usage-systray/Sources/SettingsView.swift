@@ -1,9 +1,24 @@
 import SwiftUI
-import AppKit
+
+fileprivate enum SettingsVisualTokens {
+    static let windowSize = CGSize(width: 460, height: 520)
+    static let cardCornerRadius: CGFloat = 14
+    static let controlCornerRadius: CGFloat = 10
+    static let outerHorizontalPadding: CGFloat = 12
+    static let outerTopPadding: CGFloat = 8
+    static let outerBottomPadding: CGFloat = 10
+    static let cardPadding: CGFloat = 11
+    static let cardSpacing: CGFloat = 9
+    static let sectionSpacing: CGFloat = 8
+    static let dividerOpacity: Double = 0.11
+    static let hoverOpacity: Double = 0.11
+    static let pressedOpacity: Double = 0.16
+}
 
 struct SettingsView: View {
     @ObservedObject var settingsManager: SettingsManager
     @ObservedObject var usageService: UsageService
+    let onClose: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
 
     @State private var warningThreshold: Double = 80
@@ -15,162 +30,278 @@ struct SettingsView: View {
     @State private var authError: String?
     @State private var isSavingSession = false
 
+    init(
+        settingsManager: SettingsManager,
+        usageService: UsageService,
+        onClose: (() -> Void)? = nil
+    ) {
+        self._settingsManager = ObservedObject(wrappedValue: settingsManager)
+        self._usageService = ObservedObject(wrappedValue: usageService)
+        self.onClose = onClose
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 10) {
             header
 
-            Form {
-                authSection
-
-                Section("Menu Bar") {
-                    Toggle("Compact display (primary · secondary)", isOn: $compactDisplay)
-                        .onChange(of: compactDisplay) { newValue in
-                            settingsManager.setCompactDisplay(newValue)
-                        }
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: SettingsVisualTokens.cardSpacing) {
+                    authSection
+                    menuBarSection
+                    notificationsSection
                 }
-
-                Section("Notifications") {
-                    Toggle("Enable usage alerts", isOn: $notificationsEnabled)
-                        .onChange(of: notificationsEnabled) { newValue in
-                            settingsManager.setNotificationsEnabled(newValue)
-                        }
-
-                    VStack(alignment: .leading) {
-                        Text("Warning threshold: \(Int(warningThreshold))%")
-                        Slider(value: $warningThreshold, in: 50...95, step: 5)
-                            .onChange(of: warningThreshold) { newValue in
-                                settingsManager.setWarningThreshold(newValue)
-                            }
-                    }
-
-                    VStack(alignment: .leading) {
-                        Text("Critical threshold: \(Int(criticalThreshold))%")
-                        Slider(value: $criticalThreshold, in: 60...100, step: 5)
-                            .onChange(of: criticalThreshold) { newValue in
-                                settingsManager.setCriticalThreshold(newValue)
-                            }
-                    }
-                }
+                .padding(.horizontal, 2)
+                .padding(.bottom, 1)
             }
-            .formStyle(.grouped)
-            .padding()
 
             footer
         }
-        .frame(width: 460, height: 520)
+        .padding(.horizontal, SettingsVisualTokens.outerHorizontalPadding)
+        .padding(.top, SettingsVisualTokens.outerTopPadding)
+        .padding(.bottom, SettingsVisualTokens.outerBottomPadding)
+        .frame(width: SettingsVisualTokens.windowSize.width, height: SettingsVisualTokens.windowSize.height)
         .onAppear { loadSettings() }
     }
 
     private var authSection: some View {
-        Section("Auth") {
-            HStack {
-                Image(systemName: authStateIcon)
-                    .foregroundColor(authStateColor)
-                Text(authStateTitle)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text(authStateBadge)
-                    .font(.caption2)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(authStateColor.opacity(0.18))
-                    .cornerRadius(4)
-            }
+        sectionCard("Auth") {
+            VStack(alignment: .leading, spacing: SettingsVisualTokens.sectionSpacing) {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: authStateIcon)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(authStateColor)
+                        .frame(width: 15)
 
-            if usageService.hasInstalledCodexAuth {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Installed Codex detected")
-                        .font(.subheadline.weight(.medium))
-                    Text("The app can read your local Codex sign-in and will prefer it automatically. If usage looks stale, reopen Codex and click refresh here.")
+                    Text(authStateTitle)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(usageService.installedCodexAuthPath)
-                        .font(.system(.caption2, design: .monospaced))
-                        .foregroundColor(.secondary)
-                        .textSelection(.enabled)
 
-                    Button("Refresh Using Installed Codex") {
-                        usageService.fetchUsage()
+                    Spacer()
+
+                    Text(authStateBadge)
+                        .font(.system(size: 10, weight: .semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(authStateColor.opacity(0.15))
+                                .overlay(
+                                    Capsule(style: .continuous)
+                                        .strokeBorder(authStateColor.opacity(0.24), lineWidth: 0.8)
+                                )
+                        )
+                }
+
+                if usageService.hasInstalledCodexAuth {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Installed Codex detected")
+                            .font(.subheadline.weight(.medium))
+                        Text("The app can read your local Codex sign-in and will prefer it automatically. If usage looks stale, reopen Codex and click refresh here.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(usageService.installedCodexAuthPath)
+                            .font(.system(.caption2, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+
+                        Button("Refresh Using Installed Codex") {
+                            usageService.fetchUsage()
+                        }
+                        .buttonStyle(SettingsGlassButtonStyle(role: .normal))
                     }
+                    .padding(9)
+                    .background(subtleInsetBackground)
                 }
-                .padding(.bottom, 4)
-            }
 
-            Text("Manual fallback: open `https://chatgpt.com/codex/settings/usage` in your browser, copy the full `Cookie` request header, then paste it here. Include Cloudflare cookies such as `cf_clearance` if present.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                divider
 
-            TextEditor(text: $sessionCookie)
-                .font(.system(.caption, design: .monospaced))
-                .frame(minHeight: 110)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.secondary.opacity(0.2))
-                )
-
-            if let authMessage {
-                Text(authMessage)
+                Text("Manual fallback: open `https://chatgpt.com/codex/settings/usage` in your browser, copy the full `Cookie` request header, then paste it here. Include Cloudflare cookies such as `cf_clearance` if present.")
                     .font(.caption)
-                    .foregroundColor(.green)
-            }
-
-            if let authError {
-                Text(authError)
-                    .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-            }
 
-            HStack {
-                Button(isSavingSession ? "Validating…" : (usageService.hasStoredSession ? "Update Fallback Session" : "Save Fallback Session")) {
-                    saveSession()
+                TextEditor(text: $sessionCookie)
+                    .font(.system(.caption, design: .monospaced))
+                    .frame(minHeight: 110)
+                    .padding(4)
+                    .background(subtleInsetBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
+                    )
+
+                if let authMessage {
+                    Text(authMessage)
+                        .font(.caption)
+                        .foregroundStyle(.green)
                 }
-                .disabled(isSavingSession || sessionCookie.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                Button("Clear Fallback Session") {
-                    clearSession()
+                if let authError {
+                    Text(authError)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .disabled(!usageService.hasStoredSession && sessionCookie.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                Spacer()
+                HStack(spacing: 10) {
+                    Button(isSavingSession ? "Validating…" : (usageService.hasStoredSession ? "Update Fallback Session" : "Save Fallback Session")) {
+                        saveSession()
+                    }
+                    .buttonStyle(SettingsGlassButtonStyle(role: .normal))
+                    .disabled(isSavingSession || sessionCookie.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                    Button("Clear Fallback Session") {
+                        clearSession()
+                    }
+                    .buttonStyle(SettingsGlassButtonStyle(role: .subtle))
+                    .disabled(!usageService.hasStoredSession && sessionCookie.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                    Spacer(minLength: 0)
+                }
             }
         }
     }
 
+    private var menuBarSection: some View {
+        sectionCard("Menu Bar") {
+            Toggle("Compact display (primary · secondary)", isOn: $compactDisplay)
+                .toggleStyle(.switch)
+                .onChange(of: compactDisplay) { newValue in
+                    settingsManager.setCompactDisplay(newValue)
+                }
+        }
+    }
+
+    private var notificationsSection: some View {
+        sectionCard("Notifications") {
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle("Enable usage alerts", isOn: $notificationsEnabled)
+                    .toggleStyle(.switch)
+                    .onChange(of: notificationsEnabled) { newValue in
+                        settingsManager.setNotificationsEnabled(newValue)
+                    }
+
+                sliderRow(
+                    title: "Warning threshold",
+                    valueText: "\(Int(warningThreshold))%",
+                    value: $warningThreshold,
+                    range: 50...95
+                ) { newValue in
+                    settingsManager.setWarningThreshold(newValue)
+                }
+
+                sliderRow(
+                    title: "Critical threshold",
+                    valueText: "\(Int(criticalThreshold))%",
+                    value: $criticalThreshold,
+                    range: 60...100
+                ) { newValue in
+                    settingsManager.setCriticalThreshold(newValue)
+                }
+            }
+        }
+    }
+
+    private func sliderRow(
+        title: String,
+        valueText: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        onChange: @escaping (Double) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title)
+                    .font(.caption)
+                Spacer()
+                Text(valueText)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            Slider(value: value, in: range, step: 5)
+                .onChange(of: value.wrappedValue, perform: onChange)
+        }
+    }
+
     private var header: some View {
-        HStack {
-            Image(systemName: "chart.pie.fill")
-                .font(.title)
-                .foregroundColor(.green)
+        HStack(spacing: 10) {
+            Circle()
+                .fill(Color.green.opacity(0.16))
+                .frame(width: 26, height: 26)
+                .overlay(
+                    Image(systemName: "chart.pie.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.green)
+                )
             Text("ChatGPT Codex Usage Settings")
                 .font(.headline)
             Spacer()
-            Button(action: { dismiss() }) {
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(.secondary)
+            Button(action: closeSettings) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 23, height: 23)
+                    .background(
+                        Circle()
+                            .fill(Color.primary.opacity(0.06))
+                            .overlay(Circle().stroke(Color.white.opacity(0.24), lineWidth: 0.8))
+                    )
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
+        .padding(.horizontal, 2)
+        .padding(.top, 0)
     }
 
     private var footer: some View {
         HStack {
             Text("Data source: ChatGPT Codex usage dashboard")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
             Spacer()
             Button("Reset to Defaults") { resetToDefaults() }
-                .buttonStyle(.borderless)
-                .foregroundColor(.red)
+                .buttonStyle(SettingsGlassButtonStyle(role: .danger))
+                .foregroundStyle(.red)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(Color(NSColor.controlBackgroundColor))
+        .padding(.horizontal, 2)
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(SettingsVisualTokens.dividerOpacity))
+            .frame(height: 0.8)
+    }
+
+    private var subtleInsetBackground: some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(Color.white.opacity(0.018))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 0.8)
+            )
+    }
+
+    private func sectionCard<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            content()
+        }
+        .padding(SettingsVisualTokens.cardPadding)
+        .background(
+            RoundedRectangle(cornerRadius: SettingsVisualTokens.cardCornerRadius, style: .continuous)
+                .fill(Color.white.opacity(0.008))
+                .overlay(
+                    RoundedRectangle(cornerRadius: SettingsVisualTokens.cardCornerRadius, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.8)
+                )
+        )
     }
 
     private var authStateIcon: String {
@@ -184,6 +315,14 @@ struct SettingsView: View {
         case .missingSession:
             return "key.fill"
         }
+    }
+
+    private func closeSettings() {
+        if let onClose {
+            onClose()
+            return
+        }
+        dismiss()
     }
 
     private var authStateColor: Color {
@@ -280,5 +419,75 @@ struct SettingsView: View {
     private func resetToDefaults() {
         settingsManager.resetToDefaults()
         loadSettings()
+    }
+}
+
+private struct SettingsGlassButtonStyle: ButtonStyle {
+    enum Role {
+        case normal
+        case subtle
+        case danger
+    }
+
+    let role: Role
+
+    func makeBody(configuration: Configuration) -> some View {
+        SettingsGlassButtonBody(configuration: configuration, role: role)
+    }
+}
+
+private struct SettingsGlassButtonBody: View {
+    let configuration: ButtonStyle.Configuration
+    let role: SettingsGlassButtonStyle.Role
+    @State private var isHovered = false
+
+    var body: some View {
+        configuration.label
+            .font(.system(size: 11, weight: .medium))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: SettingsVisualTokens.controlCornerRadius, style: .continuous)
+                    .fill(backgroundColor)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: SettingsVisualTokens.controlCornerRadius, style: .continuous)
+                            .strokeBorder(strokeColor, lineWidth: 0.8)
+                    )
+            )
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .opacity(configuration.isPressed ? 0.96 : 1)
+            .onHover { hovering in
+                isHovered = hovering
+            }
+            .animation(.easeOut(duration: 0.14), value: isHovered)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+
+    private var backgroundColor: Color {
+        if configuration.isPressed {
+            return baseTint.opacity(SettingsVisualTokens.pressedOpacity)
+        }
+        if isHovered {
+            return baseTint.opacity(SettingsVisualTokens.hoverOpacity)
+        }
+        return Color.white.opacity(0.055)
+    }
+
+    private var strokeColor: Color {
+        if isHovered || configuration.isPressed {
+            return baseTint.opacity(0.4)
+        }
+        return Color.white.opacity(0.18)
+    }
+
+    private var baseTint: Color {
+        switch role {
+        case .normal:
+            return .primary
+        case .subtle:
+            return .secondary
+        case .danger:
+            return .red
+        }
     }
 }
