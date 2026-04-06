@@ -428,47 +428,11 @@ struct MenuBarView: View {
 
     private func openSettings() {
         Task { @MainActor in
-            let menuGlassProfile = currentMenuGlassProfile()
-            hideMenuPresentationWindows()
             SettingsWindowPresenter.shared.show(
                 settingsManager: settingsManager,
-                usageService: usageService,
-                preferredGlassProfile: menuGlassProfile
+                usageService: usageService
             )
         }
-    }
-
-    @MainActor
-    private func hideMenuPresentationWindows() {
-        for window in NSApp.windows where window.isVisible && isLikelyMenuPresentationWindow(window) {
-            window.orderOut(nil)
-        }
-    }
-
-    private func isLikelyMenuPresentationWindow(_ window: NSWindow) -> Bool {
-        let className = NSStringFromClass(type(of: window))
-        if className.contains("MenuBarExtra") || className.contains("Popover") {
-            return true
-        }
-
-        let size = window.frame.size
-        let untitledBorderless = window.title.isEmpty && !window.styleMask.contains(.titled)
-        let menuLevel = window.level == .popUpMenu || window.level == .statusBar
-        return untitledBorderless && menuLevel && size.width < 360 && size.height < 900
-    }
-
-    @MainActor
-    private func currentMenuGlassProfile() -> MenuGlassProfile? {
-        for window in NSApp.windows where window.isVisible && isLikelyMenuPresentationWindow(window) {
-            if let visualEffectView = window.contentView?.firstDescendant(of: NSVisualEffectView.self) {
-                return MenuGlassProfile(
-                    material: visualEffectView.material,
-                    blendingMode: visualEffectView.blendingMode,
-                    state: visualEffectView.state
-                )
-            }
-        }
-        return nil
     }
 
     private func quitApp() {
@@ -554,12 +518,6 @@ private struct QuotaRowModel {
     let rank: Int
 }
 
-private struct MenuGlassProfile {
-    let material: NSVisualEffectView.Material
-    let blendingMode: NSVisualEffectView.BlendingMode
-    let state: NSVisualEffectView.State
-}
-
 @MainActor
 private final class SettingsWindowPresenter {
     static let shared = SettingsWindowPresenter()
@@ -571,8 +529,7 @@ private final class SettingsWindowPresenter {
 
     func show(
         settingsManager: SettingsManager,
-        usageService: UsageService,
-        preferredGlassProfile: MenuGlassProfile? = nil
+        usageService: UsageService
     ) {
         if let window {
             window.makeKeyAndOrderFront(nil)
@@ -598,14 +555,9 @@ private final class SettingsWindowPresenter {
         window.collectionBehavior = [.transient, .moveToActiveSpace]
 
         let visualEffectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: windowSize))
-        let glassProfile = preferredGlassProfile ?? MenuGlassProfile(
-            material: .menu,
-            blendingMode: .behindWindow,
-            state: .followsWindowActiveState
-        )
-        visualEffectView.material = glassProfile.material
-        visualEffectView.blendingMode = glassProfile.blendingMode
-        visualEffectView.state = glassProfile.state
+        visualEffectView.material = .menu
+        visualEffectView.blendingMode = .behindWindow
+        visualEffectView.state = .followsWindowActiveState
         visualEffectView.wantsLayer = true
         visualEffectView.layer?.cornerRadius = 28
         visualEffectView.layer?.masksToBounds = true
@@ -660,21 +612,6 @@ private final class WindowCloseObserver: NSObject, NSWindowDelegate {
 private final class BorderlessKeyWindow: NSWindow {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
-}
-
-private extension NSView {
-    func firstDescendant<T: NSView>(of viewType: T.Type) -> T? {
-        if let match = self as? T {
-            return match
-        }
-
-        for subview in subviews {
-            if let match = subview.firstDescendant(of: viewType) {
-                return match
-            }
-        }
-        return nil
-    }
 }
 
 private struct GlassActionButtonStyle: ButtonStyle {
