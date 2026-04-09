@@ -1,6 +1,6 @@
 import Foundation
 
-struct AppSettings: Codable {
+struct AppSettings: Codable, Equatable {
     var warningThreshold: Double = 80.0
     var criticalThreshold: Double = 90.0
     var notificationsEnabled: Bool = true

@@ -23,7 +23,8 @@ The goal is simple: make your usage feel visible, lightweight, and native to mac
 - Native-style menu bar experience
 - Compact quota summary directly in the menu bar
 - Fast dropdown for current usage and reset timing
-- Borderless native-feeling Settings window with liquid glass styling that complements the native tray popup without overriding it
+- Native macOS Settings scene instead of a custom utility window
+- Compact glass-styled Settings window with native toolbar/titlebar behavior
 - Automatic use of your existing Codex desktop sign-in when possible
 - Secure fallback session storage in macOS Keychain
 - Optional notifications as you approach your limit
@@ -37,7 +38,17 @@ The goal is simple: make your usage feel visible, lightweight, and native to mac
 
 Open [`codex-usage-systray/CodexUsageSystray.xcodeproj`](codex-usage-systray/CodexUsageSystray.xcodeproj) in Xcode, select the `CodexUsageSystray` scheme, and run the app on `My Mac`.
 
-Because this is a menu bar utility, it launches into the menu bar rather than opening a normal app window.
+Because this is intentionally an `LSUIElement` menu bar utility, it launches into the menu bar rather than opening a normal app window or appearing in the Dock.
+
+## Project Layout
+
+The app sources are organized to match the current macOS SwiftUI structure:
+
+- `Sources/App` for the app entry point and app lifecycle hooks
+- `Sources/Models` for usage and parsing models
+- `Sources/Services` for networking, auth, polling, notifications, and settings persistence
+- `Sources/Views` for the menu bar popup, status item label, and Settings UI
+- `Sources/Support` for small command helpers and glue code
 
 ## Authentication
 
@@ -49,6 +60,11 @@ If that is not available, you can add fallback session details in Settings. Thos
 
 - This project depends on the current ChatGPT Codex usage experience remaining available.
 - The app is designed to feel like a small native utility, not a full desktop dashboard.
+
+## Releases
+
+- Release notes and packaged builds live in [`release/`](release/)
+- The current release prep in this repository targets `v1.0.8`
 
 ## Credits
 

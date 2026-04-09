@@ -125,6 +125,7 @@ final class UsageSnapshotTests: XCTestCase {
     }
 }
 
+@MainActor
 final class UsageServiceCredentialFlowTests: XCTestCase {
     func testInstalledCodexAuthConfiguresServiceWithoutFallbackCookie() {
         let service = UsageService(
@@ -309,6 +310,42 @@ final class UsageNotificationTests: XCTestCase {
         )
 
         XCTAssertEqual(critical.event, .critical(95))
+    }
+}
+
+@MainActor
+final class UsageRefreshSchedulerTests: XCTestCase {
+    func testRetryableErrorsMapToExpectedIntervals() {
+        let scheduler = UsageRefreshScheduler(normalInterval: 300, backoffInterval: 900)
+
+        XCTAssertEqual(scheduler.interval(for: .invalidPayload), 300)
+        XCTAssertEqual(scheduler.interval(for: .blockedByCloudflare), 900)
+        XCTAssertEqual(scheduler.interval(for: .httpStatus(429, "rate limited")), 900)
+        XCTAssertEqual(scheduler.interval(for: .httpStatus(500, "server error")), 300)
+        XCTAssertNil(scheduler.interval(for: .missingSession))
+        XCTAssertNil(scheduler.interval(for: .invalidSession))
+    }
+}
+
+@MainActor
+final class SettingsManagerTests: XCTestCase {
+    func testSettingsPersistAndReloadFromInjectedDefaults() {
+        let suiteName = "SettingsManagerTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let manager = SettingsManager(defaults: defaults, settingsKey: "TestSettings")
+        manager.setWarningThreshold(75)
+        manager.setCriticalThreshold(95)
+        manager.setNotificationsEnabled(false)
+        manager.setCompactDisplay(false)
+
+        let reloaded = SettingsManager(defaults: defaults, settingsKey: "TestSettings")
+
+        XCTAssertEqual(reloaded.settings.warningThreshold, 75)
+        XCTAssertEqual(reloaded.settings.criticalThreshold, 95)
+        XCTAssertFalse(reloaded.settings.notificationsEnabled)
+        XCTAssertFalse(reloaded.settings.compactDisplay)
     }
 }
 

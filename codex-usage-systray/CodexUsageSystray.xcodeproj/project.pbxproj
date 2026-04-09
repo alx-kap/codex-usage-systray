@@ -8,6 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		22F4B6C5A7558EED3BD2DB95 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06653C5881670A81199C42CC /* MenuBarView.swift */; };
+		1A1111111111111111111111 /* StatusItemLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1111111111111111111111 /* StatusItemLabelView.swift */; };
+		1A2222222222222222222222 /* UsageCredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A2222222222222222222222 /* UsageCredentials.swift */; };
+		1A3333333333333333333333 /* UsageParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A3333333333333333333333 /* UsageParsing.swift */; };
+		1A4444444444444444444444 /* UsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A4444444444444444444444 /* UsageClient.swift */; };
+		1A5555555555555555555555 /* UsageRefreshScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A5555555555555555555555 /* UsageRefreshScheduler.swift */; };
+		1A6666666666666666666666 /* UsageNotificationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A6666666666666666666666 /* UsageNotificationController.swift */; };
+		1A7777777777777777777777 /* AppCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A7777777777777777777777 /* AppCommands.swift */; };
 		354CBABB4F867F1E95A9A01E /* UsageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEE554A7DA6DDC77A08A3EEE /* UsageService.swift */; };
 		4B94CAD601C9365558A3A209 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C3BC14807EE08B3766D0A9C8 /* Assets.xcassets */; };
 		59259AC8C5B89477A67D5A8D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1107FB82A3A3C9FC04B4F35 /* SettingsView.swift */; };
@@ -30,19 +37,26 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		06653C5881670A81199C42CC /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		06653C5881670A81199C42CC /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/MenuBar/MenuBarView.swift; sourceTree = "<group>"; };
+		2A1111111111111111111111 /* StatusItemLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/MenuBar/StatusItemLabelView.swift; sourceTree = "<group>"; };
+		2A2222222222222222222222 /* UsageCredentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/UsageCredentials.swift; sourceTree = "<group>"; };
+		2A3333333333333333333333 /* UsageParsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/UsageParsing.swift; sourceTree = "<group>"; };
+		2A4444444444444444444444 /* UsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/UsageClient.swift; sourceTree = "<group>"; };
+		2A5555555555555555555555 /* UsageRefreshScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/UsageRefreshScheduler.swift; sourceTree = "<group>"; };
+		2A6666666666666666666666 /* UsageNotificationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/UsageNotificationController.swift; sourceTree = "<group>"; };
+		2A7777777777777777777777 /* AppCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/AppCommands.swift; sourceTree = "<group>"; };
 		20995FA0F9EEA9F7D67A33F6 /* CodexUsageSystray.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodexUsageSystray.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		32234A82B1C94CCB6F3763AE /* UsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageData.swift; sourceTree = "<group>"; };
+		32234A82B1C94CCB6F3763AE /* UsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/UsageData.swift; sourceTree = "<group>"; };
 		8CF92A3018305AA026317454 /* UsageServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageServiceTests.swift; sourceTree = "<group>"; };
-		A6D94B6D2B624CA29F7C32A4 /* CodexUsageSystrayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexUsageSystrayApp.swift; sourceTree = "<group>"; };
+		A6D94B6D2B624CA29F7C32A4 /* CodexUsageSystrayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/CodexUsageSystrayApp.swift; sourceTree = "<group>"; };
 		971BD946FCB9D8A12AC5DA99 /* CodexUsageSystrayTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CodexUsageSystrayTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		B1107FB82A3A3C9FC04B4F35 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		C024067E6D3F865AF198511C /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
+		B1107FB82A3A3C9FC04B4F35 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/Settings/SettingsView.swift; sourceTree = "<group>"; };
+		C024067E6D3F865AF198511C /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/SettingsManager.swift; sourceTree = "<group>"; };
 		C3BC14807EE08B3766D0A9C8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D08767FD02695AFBE000669F /* CodexUsageSystray.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CodexUsageSystray.entitlements; sourceTree = "<group>"; };
 		DA6F91F4720B31FB4CA872B9 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		DE78D81A249AA2CBF9D9C9CB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		DEE554A7DA6DDC77A08A3EEE /* UsageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageService.swift; sourceTree = "<group>"; };
+		DE78D81A249AA2CBF9D9C9CB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppDelegate.swift; sourceTree = "<group>"; };
+		DEE554A7DA6DDC77A08A3EEE /* UsageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/UsageService.swift; sourceTree = "<group>"; };
 		F35CDB3DFFFBEE4CE3F0D52E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -109,10 +123,17 @@
 			children = (
 				A6D94B6D2B624CA29F7C32A4 /* CodexUsageSystrayApp.swift */,
 				DE78D81A249AA2CBF9D9C9CB /* AppDelegate.swift */,
+				2A7777777777777777777777 /* AppCommands.swift */,
 				06653C5881670A81199C42CC /* MenuBarView.swift */,
+				2A1111111111111111111111 /* StatusItemLabelView.swift */,
 				C024067E6D3F865AF198511C /* SettingsManager.swift */,
 				B1107FB82A3A3C9FC04B4F35 /* SettingsView.swift */,
 				32234A82B1C94CCB6F3763AE /* UsageData.swift */,
+				2A2222222222222222222222 /* UsageCredentials.swift */,
+				2A3333333333333333333333 /* UsageParsing.swift */,
+				2A4444444444444444444444 /* UsageClient.swift */,
+				2A5555555555555555555555 /* UsageRefreshScheduler.swift */,
+				2A6666666666666666666666 /* UsageNotificationController.swift */,
 				DEE554A7DA6DDC77A08A3EEE /* UsageService.swift */,
 			);
 			path = Sources;
@@ -218,10 +239,17 @@
 			files = (
 				96EF1B8FA3E74E8C8E4F91D2 /* CodexUsageSystrayApp.swift in Sources */,
 				C33689B322FFA7525A92894A /* AppDelegate.swift in Sources */,
+				1A7777777777777777777777 /* AppCommands.swift in Sources */,
 				22F4B6C5A7558EED3BD2DB95 /* MenuBarView.swift in Sources */,
+				1A1111111111111111111111 /* StatusItemLabelView.swift in Sources */,
 				F25EDEE38ABF1A0E15C849DC /* SettingsManager.swift in Sources */,
 				59259AC8C5B89477A67D5A8D /* SettingsView.swift in Sources */,
 				80E1131433C5BE35E6CF65E4 /* UsageData.swift in Sources */,
+				1A2222222222222222222222 /* UsageCredentials.swift in Sources */,
+				1A3333333333333333333333 /* UsageParsing.swift in Sources */,
+				1A4444444444444444444444 /* UsageClient.swift in Sources */,
+				1A5555555555555555555555 /* UsageRefreshScheduler.swift in Sources */,
+				1A6666666666666666666666 /* UsageNotificationController.swift in Sources */,
 				354CBABB4F867F1E95A9A01E /* UsageService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -312,7 +340,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 2P8YU9RR8C;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
@@ -323,7 +351,7 @@
 					"@executable_path/../Frameworks",
 				);
 				LSUIElement = YES;
-				MARKETING_VERSION = 1.0.7;
+				MARKETING_VERSION = 1.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chatgpt.codex-usage-tray";
 				PRODUCT_NAME = CodexUsageSystray;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -399,7 +427,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 2P8YU9RR8C;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "ChatGPT Codex Usage Tray";
@@ -409,7 +437,7 @@
 					"@executable_path/../Frameworks",
 				);
 				LSUIElement = YES;
-				MARKETING_VERSION = 1.0.7;
+				MARKETING_VERSION = 1.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chatgpt.codex-usage-tray";
 				PRODUCT_NAME = CodexUsageSystray;
 				PROVISIONING_PROFILE_SPECIFIER = "";

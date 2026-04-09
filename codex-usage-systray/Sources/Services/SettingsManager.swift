@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class SettingsManager: ObservableObject {
     static let shared = SettingsManager()
 
@@ -7,10 +8,16 @@ final class SettingsManager: ObservableObject {
         didSet { saveSettings() }
     }
 
-    private let defaults = UserDefaults.standard
-    private let settingsKey = "ChatGPTCodexUsageSettings"
+    private let defaults: UserDefaults
+    private let settingsKey: String
 
-    private init() {
+    init(
+        defaults: UserDefaults = .standard,
+        settingsKey: String = "ChatGPTCodexUsageSettings"
+    ) {
+        self.defaults = defaults
+        self.settingsKey = settingsKey
+
         if let data = defaults.data(forKey: settingsKey),
            let decoded = try? JSONDecoder().decode(AppSettings.self, from: data) {
             settings = decoded
