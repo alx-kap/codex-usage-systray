@@ -25,6 +25,7 @@ The goal is simple: make your usage feel visible, lightweight, and native to mac
 - Fast dropdown for current usage and reset timing
 - Native macOS Settings scene instead of a custom utility window
 - Compact glass-styled Settings window with native toolbar/titlebar behavior
+- Settings now open on the active desktop and reliably come back to the front when reopened from the tray
 - Automatic use of your existing Codex desktop sign-in when possible
 - Secure fallback session storage in macOS Keychain
 - Optional notifications as you approach your limit
@@ -64,7 +65,7 @@ If that is not available, you can add fallback session details in Settings. Thos
 ## Releases
 
 - Release notes and packaged builds live in [`release/`](release/)
-- The current release prep in this repository targets `v1.0.8`
+- The current release prep in this repository targets `v1.0.9`
 
 ## Credits
 

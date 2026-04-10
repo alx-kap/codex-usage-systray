@@ -34,10 +34,17 @@ struct CodexUsageSystrayApp: App {
 
             CommandGroup(replacing: .appSettings) {
                 if #available(macOS 14.0, *) {
-                    SettingsLink {
-                        Text("Settings…")
+                    if SettingsWindowController.shared.hasKnownWindow {
+                        Button("Settings…") {
+                            SettingsWindowController.shared.revealExistingWindow()
+                        }
+                        .keyboardShortcut(",", modifiers: [.command])
+                    } else {
+                        SettingsLink {
+                            Text("Settings…")
+                        }
+                        .keyboardShortcut(",", modifiers: [.command])
                     }
-                    .keyboardShortcut(",", modifiers: [.command])
                 } else {
                     Button("Settings…") {
                         AppCommands.openLegacySettings()

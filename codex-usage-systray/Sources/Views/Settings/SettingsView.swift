@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 private enum SettingsVisualTokens {
@@ -27,6 +28,7 @@ struct SettingsView: View {
             .frame(width: SettingsVisualTokens.contentWidth, alignment: .topLeading)
             .frame(minHeight: 540, alignment: .topLeading)
             .modifier(SettingsToolbarGlassModifier())
+            .background(SettingsWindowAccessor())
             .onAppear(perform: loadSettings)
     }
 
@@ -364,6 +366,24 @@ struct SettingsView: View {
     private func resetToDefaults() {
         settingsManager.resetToDefaults()
         loadSettings()
+    }
+}
+
+private struct SettingsWindowAccessor: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        ObserverView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+private final class ObserverView: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+
+        if let window {
+            SettingsWindowController.shared.register(window: window)
+        }
     }
 }
 

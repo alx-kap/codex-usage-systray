@@ -423,10 +423,17 @@ private struct MenuBarSettingsLinkRow: View {
 
     var body: some View {
         if #available(macOS 14.0, *) {
-            SettingsLink {
-                rowLabel
+            if SettingsWindowController.shared.hasKnownWindow {
+                Button(action: SettingsWindowController.shared.revealExistingWindow) {
+                    rowLabel
+                }
+                .buttonStyle(MenuBarActionButtonStyle())
+            } else {
+                SettingsLink {
+                    rowLabel
+                }
+                .buttonStyle(MenuBarActionButtonStyle())
             }
-            .buttonStyle(MenuBarActionButtonStyle())
         } else {
             Button(action: AppCommands.openLegacySettings) {
                 rowLabel
