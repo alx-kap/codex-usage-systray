@@ -12,7 +12,7 @@ enum AppCommands {
     }
 
     static func openDashboard() {
-        guard let url = URL(string: "https://chatgpt.com/codex/settings/usage") else {
+        guard let url = URL(string: "https://chatgpt.com/settings/usage?tab=overview") else {
             return
         }
 

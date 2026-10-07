@@ -65,7 +65,7 @@ If that is not available, you can add fallback session details in Settings. Thos
 ## Releases
 
 - Release notes and packaged builds live in [`release/`](release/)
-- The current release prep in this repository targets `v1.0.9`
+- The current release prep in this repository targets `v1.0.10`
 
 ## Credits
 
